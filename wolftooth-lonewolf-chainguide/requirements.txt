@@ -1,0 +1,8 @@
+cadquery>=2.4
+trimesh>=4.0
+numpy
+scipy
+matplotlib
+pillow
+networkx
+pymeshfix        # optional: closes rare pinholes in exported STLs
