@@ -33,6 +33,7 @@ import cadquery as cq
 from scipy.spatial import ConvexHull
 
 # ---------------- PARAMETERS (edit these) ----------------
+REVISION      = 2      # bump for each printed revision; names renders/overlay_revision<N>.png
 # Measured from a straight-on photo of the real part, scaled by the oval
 # hole (10.21 x 11.6 mm, caliper-measured): 43.5 px/mm, outline fit rms 0.19 mm
 # over 273 auto-traced edge points.
@@ -49,7 +50,12 @@ MIRROR        = False  # True = fin on the other side (left/right-hand head)
 # oval GuideLock hole (caliper-measured)
 HOLE_W        = 10.21  # width
 HOLE_H        = 11.6   # height (long axis)
-HOLE_TILT     = 16.0   # long axis leans this many degrees from vertical, top toward +X
+HOLE_TILT     = 16.0   # long axis leans this many degrees from vertical, top toward +X (OEM)
+HOLE_TILT_EXT = -4.0   # extra tilt on extended versions (+ = clockwise, - = top toward the
+                       # rear). The bushing (cam) is fixed, so tilting the oval back 4° turns the
+                       # part 4° clockwise and levels its bottom with the chain (first +5 print)
+HOLE_CLEARANCE = 0.1   # added to both hole axes: covers ASA shrinkage. Keep small: the oval is only
+                       # 1.4 mm elongated, so 0.1 mm already allows ~±4° twist on the bushing (0.2 = ±8°)
 HOLE_CENTRE   = (0.0, 0.0)
 
 TOP_R         = 8.22    # radius of the raised pad's rounded top (concentric with hole)
@@ -76,6 +82,8 @@ CHAMFER_TRAIL  = 2.2   # steep side (measured 2.2 from the photo)
 CHAMFER_DEPTH  = 2.2   # how far back into the 5.3 mm base the chamfer runs (45 deg when = width)
 
 PAD_CORNER_R  = 2.0             # rounding of the raised pad's side corners
+PAD_END_R     = 5.0             # extended pad bottom: radius of the curved leading/trailing
+                                # ends where the chain enters and leaves (OEM U ~ TOP_R)
 BASE_CORNER_R = 1.5             # rounding of the base's fin tip and bottom corners
 # raised text on the back face (the face against the arm)
 TEXT_LINES    = ()      # e.g. ("BushpigLab", "LLC") to add raised text
@@ -83,7 +91,8 @@ TEXT_SIZE     = 3.0    # cap height-ish, mm
 TEXT_HEIGHT   = 0.5    # how far the letters stand proud, mm (negative = engraved)
 TEXT_CENTRE   = (-6.5, -10.0)  # front-view (x, z) of the text block on the stock part
 TEXT_FONT     = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-EDGE_FILLET   = 0.5            # softening of front/back face edges (0 = off)
+EDGE_FILLET   = 1.0            # rounding of the square edges: pad front edge and back outline (0 = off)
+HOLE_FILLET   = 0.5            # rounding of both hole rims (0 = off)
 # ----------------------------------------------------------
 
 
@@ -164,10 +173,10 @@ def edge_normals(elems, seq):
 
 
 def round_all_edges(part, r, skip=None):
-    """Round every edge that will take radius r (then r/2 for the rest).
-    Edges that are already smooth seams (arc meeting tangent line) are skipped
-    by the kernel; a few tight spots may need the smaller radius."""
-    for rad in (r, r / 2):
+    """Round every edge that will take radius r, then step down (0.75r, 0.5r,
+    0.3r) for edges too tight for it, e.g. where the bevels meet the base
+    plate's front face. Smooth seams (arc meeting tangent line) are skipped."""
+    for rad in (r, r * 0.75, r * 0.5, r * 0.3):
         cand = []
         for e in part.edges().vals():
             if skip is not None and skip(e):
@@ -218,7 +227,7 @@ def build(ext=EXTENSION):
     if ext > 0:
         # flat bottom parallel to the chain, `ext` closer to it than the stock
         # rounded bottom; sides drop straight from the rounded top
-        R, rf = TOP_R * S, PAD_CORNER_R
+        R, rf = TOP_R * S, min(PAD_END_R, TOP_R * S)
         base_pt = np.array(dome[0]) + (R + ext - rf) * n_chain
         for sgn in (-1, 1):
             block_elems.insert(1, (tuple(base_pt + sgn * (R - rf) * t_chain), rf, 0, 2 * np.pi))
@@ -272,21 +281,33 @@ def build(ext=EXTENSION):
     else:
         skirt = profile(skirt_elems, yf, SKIRT_DEPTH, concave=concave)
 
-    if EDGE_FILLET > 0:                       # round each piece on its own first
-        skirt = round_all_edges(skirt, EDGE_FILLET)
-        block = round_all_edges(block, EDGE_FILLET)
     if TEXT_LINES and TEXT_HEIGHT != 0:            # text goes on the base plate's back face
         skirt = add_back_text(skirt, ext_b, n_chain)
     part = skirt.union(block, clean=True)
 
     hole = (cq.Workplane("XZ", origin=(0, -1, 0)).center(*hc)
-            .ellipse(HOLE_W / 2, HOLE_H / 2, -HOLE_TILT).extrude(-(TOTAL_DEPTH + 2)))
+            .ellipse((HOLE_W + HOLE_CLEARANCE) / 2, (HOLE_H + HOLE_CLEARANCE) / 2, -(HOLE_TILT + (HOLE_TILT_EXT if ext > 0 else 0))).extrude(-(TOTAL_DEPTH + 2)))
     part = part.cut(hole)
 
     if EDGE_FILLET > 0:
-        # back-face outline was rounded before the text went on; skip the text
-        part = round_all_edges(part, EDGE_FILLET,
-                               skip=lambda e: e.BoundingBox().ymin > TOTAL_DEPTH - 0.3)
+        # Round only the square (90 deg) edges: the pad's front outline and the
+        # back outline at EDGE_FILLET, both hole rims at HOLE_FILLET. Bevels, the base plate's front-face edges
+        # and the pad/base inside corner stay crisp.
+        has_text = bool(TEXT_LINES) and TEXT_HEIGHT != 0
+        def in_plane(e, y):
+            bb = e.BoundingBox()
+            return abs(bb.ymin - y) < 1e-3 and abs(bb.ymax - y) < 1e-3
+        def hole_rim(e):
+            return (in_plane(e, 0.0) or in_plane(e, TOTAL_DEPTH)) and \
+                np.hypot(e.Center().x - hc[0], e.Center().z - hc[1]) < 1.0
+        def outer_edge(e):
+            if hole_rim(e):
+                return False
+            # with text on the back, leave the back face alone (letters sit on it)
+            return in_plane(e, 0.0) or (in_plane(e, TOTAL_DEPTH) and not has_text)
+        part = round_all_edges(part, EDGE_FILLET, skip=lambda e: not outer_edge(e))
+        if HOLE_FILLET > 0:
+            part = round_all_edges(part, HOLE_FILLET, skip=lambda e: not hole_rim(e))
 
     if MIRROR:
         part = part.mirror("YZ")

@@ -77,4 +77,4 @@ for i, e in enumerate(EXTS):
     ax.set_title(f"Thickness — side section at x = {xcut}", fontsize=11)
 fig.suptitle("LoneWolf head — extension options (mm)   ·   thickness 14.07 = 9.31 raised pad + 4.76 base (caliper-measured)",
              fontsize=14, fontweight="bold", x=0.02, ha="left", y=0.99)
-plt.tight_layout(rect=(0, 0, 1, 0.97)); plt.savefig("renders/lonewolf_extensions.png", dpi=110); plt.savefig("renders/lonewolf_extensions.pdf")
+plt.tight_layout(rect=(0, 0, 1, 0.97)); plt.savefig("renders/lonewolf_extensions.pdf")

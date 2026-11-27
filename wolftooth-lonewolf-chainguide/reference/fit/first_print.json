@@ -1,0 +1,77 @@
+{
+ "photo": "reference/photos/13_first_print_front.jpg",
+ "note": "First +5 mm print (ASA), mounted. Landmarks are image pixels (after EXIF rotation) of the front face; model points are (x, z) mm in the part frame. Chain points trace the chain's top edge under the part.",
+ "printed_settings": {
+  "HOLE_TILT_EXT": 0.0,
+  "PAD_END_R": 2.0,
+  "HOLE_CLEARANCE": 0.0
+ },
+ "extension": 5.0,
+ "landmarks": [
+  {
+   "name": "hole centre",
+   "image": [
+    961,
+    848
+   ],
+   "model": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "pad top-right corner",
+   "image": [
+    1197,
+    764
+   ],
+   "model": [
+    9.23,
+    -0.1
+   ]
+  },
+  {
+   "name": "pad top-left corner",
+   "image": [
+    661,
+    964
+   ],
+   "model": [
+    -12.12,
+    -0.2
+   ]
+  }
+ ],
+ "chain_top": [
+  [
+   380,
+   1250
+  ],
+  [
+   700,
+   1236
+  ],
+  [
+   1000,
+   1237
+  ],
+  [
+   1200,
+   1245
+  ],
+  [
+   1300,
+   1255
+  ],
+  [
+   1480,
+   1300
+  ]
+ ],
+ "crop": [
+  380,
+  520,
+  1500,
+  1420
+ ]
+}

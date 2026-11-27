@@ -69,7 +69,7 @@ sheet = Image.new("RGB", (len(EXTS) * CW + 2 * PAD, HEAD + 2 * CH + 150), "white
 d = ImageDraw.Draw(sheet)
 d.text((PAD + 10, 22), "Wolf Tooth LoneWolf head — extension options", fill=(30, 30, 40), font=title)
 d.text((PAD + 12, 82), "Same scale in every cell · 14.07 mm thick (9.31 pad + 4.76 base) · oval hole 10.21 × 11.6 mm · "
-       "2.2 mm chamfers · 0.5 mm edge rounding", fill=(95, 95, 105), font=small)
+       "2.2 mm chamfers · 1 mm rounded square edges, 0.5 mm hole rims", fill=(95, 95, 105), font=small)
 for i, (e, a, f, w, hgt, hb) in enumerate(cols):
     x = PAD + i * CW
     sheet.paste(a, (x, HEAD)); sheet.paste(f, (x, HEAD + CH))

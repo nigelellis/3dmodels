@@ -123,11 +123,11 @@ notes = [("Global settings", "k"),
          (f"EXTENSION = {L.EXTENSION} mm   CLI: python3 lonewolf_head.py <mm>", GRY),
          (f"Thickness {L.TOTAL_DEPTH} overall, base {L.SKIRT_DEPTH} (caliper-measured)", BLUE),
          (f"MIRROR = {L.MIRROR}   flips the fin to the other side", "k"),
-         (f"EDGE_FILLET = {L.EDGE_FILLET} mm   rounds every edge;  CHAMFER_DEPTH = {L.CHAMFER_DEPTH}", "k"),
+         (f"EDGE_FILLET = {L.EDGE_FILLET:g}, HOLE_FILLET = {L.HOLE_FILLET:g} mm;  CHAMFER_DEPTH = {L.CHAMFER_DEPTH}", "k"),
          ("Absolute (not scaled): hole, depths, corner radii, EXTENSION", RED),
          ("Hole 10.21 x 11.6 caliper-measured; outline fit rms 0.19 mm", RED)]
 for i, (t, c) in enumerate(notes):
     nx.text(0, 1 - i * 0.12, t, color=c, fontsize=11 if i else 12.5, fontweight="bold" if i in (0, 6, 7) else None,
             transform=nx.transAxes, va="top")
 fig.suptitle("Wolf Tooth LoneWolf head — parametric model (lonewolf_head.py)", fontsize=15, fontweight="bold", x=0.02, ha="left")
-plt.savefig("renders/lonewolf_parameters.png", dpi=130); plt.savefig("renders/lonewolf_parameters.pdf")
+plt.savefig("renders/lonewolf_parameters.pdf")

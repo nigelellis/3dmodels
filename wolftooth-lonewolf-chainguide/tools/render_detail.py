@@ -4,7 +4,8 @@ sys.path.insert(0, ROOT); os.chdir(ROOT)           # run from anywhere; paths ar
 os.makedirs("build", exist_ok=True); os.makedirs("renders", exist_ok=True)
 import numpy as np, trimesh
 from PIL import Image, ImageDraw, ImageFont
-m = trimesh.load("models/lonewolf_head_ext0mm.stl")
+EXT = float(sys.argv[1]) if len(sys.argv) > 1 else 5.0      # which version to show
+m = trimesh.load(f"models/lonewolf_head_ext{EXT:g}mm.stl")
 def rot(yaw, pitch):
     a, b = np.radians(yaw), np.radians(pitch)
     Rz = np.array([[np.cos(a), -np.sin(a), 0], [np.sin(a), np.cos(a), 0], [0, 0, 1]])
@@ -12,8 +13,10 @@ def rot(yaw, pitch):
     return Rx @ Rz
 def view(yaw, pitch, size=700, title=""):
     R = rot(yaw, pitch); V = m.vertices @ R.T; N = m.face_normals @ R.T
-    s = size * 0.026; c = V.mean(0)
-    uv = np.c_[(V[:, 0] - c[0]) * s + size / 2, -(V[:, 2] - c[2]) * s + size / 2]
+    # fit the projected part into the cell (below the title), same margins for every version
+    lo, hi = V.min(0), V.max(0); c = (lo + hi) / 2
+    s = min((size * 0.86) / (hi[0] - lo[0]), (size * 0.80) / (hi[2] - lo[2]))
+    uv = np.c_[(V[:, 0] - c[0]) * s + size / 2, -(V[:, 2] - c[2]) * s + size / 2 + 22]
     img = Image.new("RGB", (size, size), "white"); d = ImageDraw.Draw(img)
     L1 = np.array([-0.4, -1, 0.6]); L1 /= np.linalg.norm(L1); L2 = np.array([0.6, -0.5, -0.2]); L2 /= np.linalg.norm(L2)
     depth = V[m.faces][:, :, 1].mean(1)

@@ -4,14 +4,20 @@ sys.path.insert(0, ROOT); os.chdir(ROOT)           # run from anywhere; paths ar
 os.makedirs("build", exist_ok=True); os.makedirs("renders", exist_ok=True)
 import numpy as np, trimesh, sys
 from PIL import Image, ImageDraw, ImageFont
-m = from render_mesh import render_mesh
+from render_mesh import render_mesh
+import lonewolf_head as L
+EXT = float(sys.argv[1]) if len(sys.argv) > 1 else 5.0     # which version to spin
 os.makedirs("build/frames", exist_ok=True)
-m = trimesh.load(render_mesh(0))
+for f in os.listdir("build/frames"):                         # clear frames from an earlier run
+    if f.startswith("f") and f.endswith(".png"):
+        os.remove(os.path.join("build/frames", f))
+m = trimesh.load(render_mesh(EXT))
+ext_xyz = m.extents
 V0 = m.vertices - m.bounding_box.centroid
 F = m.faces; VN = m.vertex_normals
 FN = VN[F].mean(1); FN /= np.linalg.norm(FN, axis=1)[:, None]       # smoothed face normals
 OUT, SS = 720, 2; W = OUT * SS
-scale = W * 0.023
+scale = W * 0.017                     # leaves room for the diagonal while it spins
 bg = Image.new("RGB", (W, W)); g = np.linspace(250, 222, W).astype(np.uint8)
 bg = Image.fromarray(np.repeat(np.repeat(g[:, None], W, 1)[:, :, None], 3, 2))
 try: font = ImageFont.truetype("DejaVuSans-Bold.ttf", 34); small = ImageFont.truetype("DejaVuSans.ttf", 26)
@@ -38,6 +44,6 @@ for i in range(N):
         k = min(1.0, lam)
         col = tuple(int(min(255, 255 * (k * c + spec))) for c in (0.36, 0.37, 0.41))
         d.polygon([tuple(q) for q in uv[F[f]]], fill=col)
-    d.text((28, 22), "Wolf Tooth LoneWolf head — stock (0 mm)", fill=(40, 40, 50), font=font)
-    d.text((28, 66), "31.5 × 25.0 × 14.1 mm  ·  oval 10.21 × 11.6  ·  2.2 mm chamfers, 0.5 mm edges", fill=(90, 90, 100), font=small)
+    d.text((28, 22), "Wolf Tooth LoneWolf head — " + ("stock (0 mm)" if EXT == 0 else f"+{EXT:g} mm extension"), fill=(40, 40, 50), font=font)
+    d.text((28, 66), f"{ext_xyz[0]:.1f} × {ext_xyz[2]:.1f} × {ext_xyz[1]:.1f} mm  ·  oval {L.HOLE_W} × {L.HOLE_H} (+{L.HOLE_CLEARANCE})  ·  {L.CHAMFER_TRAIL} mm chamfers, {L.EDGE_FILLET:g} mm edges, {L.HOLE_FILLET:g} mm hole rims", fill=(90, 90, 100), font=small)
     img.resize((OUT, OUT), Image.LANCZOS).save(f"build/frames/f{i:03d}.png")

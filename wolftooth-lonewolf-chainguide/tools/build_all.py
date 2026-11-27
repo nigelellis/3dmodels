@@ -1,7 +1,7 @@
 """Regenerate every model and render for the project.
 
     python3 tools/build_all.py            # models + sheets + diagrams
-    python3 tools/build_all.py --video    # also the turntable MP4 (needs ffmpeg)
+    python3 tools/build_all.py --video    # also the +5 mm turntable MP4 (needs ffmpeg)
 
 Versions built: see EXTENSIONS below.
 """
@@ -19,11 +19,11 @@ def run(*args):
 
 for e in EXTENSIONS:
     run("lonewolf_head.py", str(e))
-for tool in ("diagram.py", "variants.py", "contact.py", "overlay_front.py", "render_detail.py"):
+for tool in ("diagram.py", "variants.py", "contact.py", "overlay_front.py", "overlay_revision.py", "render_detail.py"):
     run(os.path.join("tools", tool))
 
 if "--video" in sys.argv:
-    run(os.path.join("tools", "turntable.py"))
+    run(os.path.join("tools", "turntable.py"), "5")
     if shutil.which("ffmpeg"):
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "30",
                         "-i", "build/frames/f%03d.png", "-c:v", "libx264", "-preset", "veryfast",
